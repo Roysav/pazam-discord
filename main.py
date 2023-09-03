@@ -3,10 +3,12 @@ import os
 from datetime import datetime
 
 import discord
+import pandas as pd
 from discord import Client, Message
 
-from event_listener import App
 import models
+from event_listener import App
+from table2ascii import table2ascii as t2a, PresetStyle
 
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
@@ -30,6 +32,7 @@ app = PazamClient(
 PAZAM_CHANNEL = 'סופר-פזם'
 TESTS = 'tests'
 
+
 @app.on([PAZAM_CHANNEL, TESTS], r'/set service-end (?P<service_end_date>.*)')
 async def save_user_service_end_date(client: Client, message: Message, service_end_date):
     service_end_date = datetime.strptime(service_end_date, '%d/%m/%Y')
@@ -44,5 +47,14 @@ async def until_when(client: Client, message: Message):
     days_left = (end_date - datetime.now()).days
     await message.reply(f'עוד {days_left} ימים')
 
+
+@app.on([PAZAM_CHANNEL, TESTS], 'פזמטבלה')
+async def pazam_ledet(client: Client, message: Message):
+    table = models.get_pazam_table()
+    table.loc[:, 'user'] = table['user_id'].apply(lambda uid: f'<@{uid}>')
+    table.loc[:, 'days_left'] = table['day_of_release'].apply(lambda x: (x-pd.Timestamp.now()).days)
+    # table = table.drop(columns=['day_of_release', 'user_id'])
+    msg_rows = [f'{row.user} - {row.days_left} ימים' for i, row in table.iterrows()]
+    await message.reply('\n'.join(msg_rows))
 
 app.run(DISCORD_TOKEN)

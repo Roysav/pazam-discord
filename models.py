@@ -1,6 +1,6 @@
 import os
 import datetime
-
+import pandas as pd
 from sqlalchemy import Column, DateTime, create_engine, String
 from sqlalchemy.orm import DeclarativeBase, Session
 
@@ -49,3 +49,10 @@ def get_user_release_date(user_id: int) -> datetime.datetime:
     pazam = session.query(PazamCount).filter(PazamCount.user_id == str(user_id)).first()
     session.close()
     return pazam.day_of_release
+
+
+def get_pazam_table() -> pd.DataFrame:
+    df = pd.read_sql(
+        'SELECT * FROM pazam_count', engine.connect()
+    )
+    return df
